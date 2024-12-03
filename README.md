@@ -10,6 +10,9 @@ FadeAnimationDelayed is a custom Flutter widget that allows you to display conte
 - Controllable animations (pause, resume, and reset)
 - Support for custom animations
 
+- ![animatins](https://github.com/user-attachments/assets/871502c1-ec47-494c-9831-7f90e688761f)
+
+
 ## Installation
 
 To use this package, add `fade_animation_delayed` as a dependency in your `pubspec.yaml` file:
