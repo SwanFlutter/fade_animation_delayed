@@ -62,7 +62,8 @@ class FadeAnimationDelayed extends StatefulWidget {
   final Duration repeatInterval;
 
   /// Custom animation builder for maximum flexibility
-  final Widget Function(BuildContext, Widget, AnimationController)? customAnimationBuilder;
+  final Widget Function(BuildContext, Widget, AnimationController)?
+      customAnimationBuilder;
 
   /// State key for external control
   final GlobalKey<FadeAnimationDelayedState>? stateKey;
@@ -115,7 +116,8 @@ class FadeAnimationDelayed extends StatefulWidget {
   FadeAnimationDelayedState createState() => FadeAnimationDelayedState();
 }
 
-class FadeAnimationDelayedState extends State<FadeAnimationDelayed> with TickerProviderStateMixin {
+class FadeAnimationDelayedState extends State<FadeAnimationDelayed>
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimationOffset;
   late Animation<double> _scaleAnimation;
@@ -219,9 +221,12 @@ class FadeAnimationDelayedState extends State<FadeAnimationDelayed> with TickerP
   void _runAnimation() {
     _timer = Timer(widget.delay, () {
       if (widget.repeat) {
-        _animationController.repeat(reverse: true, period: widget.repeatInterval);
+        _animationController.repeat(
+            reverse: true, period: widget.repeatInterval);
       } else {
-        widget.fadeIn ? _animationController.forward() : _animationController.reverse();
+        widget.fadeIn
+            ? _animationController.forward()
+            : _animationController.reverse();
       }
     });
   }
@@ -248,7 +253,8 @@ class FadeAnimationDelayedState extends State<FadeAnimationDelayed> with TickerP
 
     // Use custom animation builder if provided
     if (widget.customAnimationBuilder != null) {
-      return widget.customAnimationBuilder!(context, child, _animationController);
+      return widget.customAnimationBuilder!(
+          context, child, _animationController);
     }
 
     // Apply animations based on selected type
@@ -349,7 +355,10 @@ class AnimationComposer {
     required Widget child,
     Duration delay = Duration.zero,
     Duration animationDuration = const Duration(milliseconds: 800),
-    List<AnimationType> animationTypes = const [AnimationType.slide, AnimationType.fadeIn],
+    List<AnimationType> animationTypes = const [
+      AnimationType.slide,
+      AnimationType.fadeIn
+    ],
     EasingType easingType = EasingType.easeOut,
     SlideDirection slideDirection = SlideDirection.bottomToTop,
   }) {

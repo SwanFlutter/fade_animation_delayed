@@ -24,7 +24,8 @@ class Screen extends StatefulWidget {
 }
 
 class _ScreenState extends State<Screen> {
-  final GlobalKey<FadeAnimationDelayedState> _delayedDisplayKey = GlobalKey<FadeAnimationDelayedState>();
+  final GlobalKey<FadeAnimationDelayedState> _delayedDisplayKey =
+      GlobalKey<FadeAnimationDelayedState>();
   bool _isVisible = true;
   @override
   Widget build(BuildContext context) {
@@ -40,17 +41,20 @@ class _ScreenState extends State<Screen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(
-                onPressed: () => _delayedDisplayKey.currentState?.pauseAnimation(),
+                onPressed: () =>
+                    _delayedDisplayKey.currentState?.pauseAnimation(),
                 child: const Text('Pause'),
               ),
               const SizedBox(width: 10),
               ElevatedButton(
-                onPressed: () => _delayedDisplayKey.currentState?.resumeAnimation(),
+                onPressed: () =>
+                    _delayedDisplayKey.currentState?.resumeAnimation(),
                 child: const Text('Resume'),
               ),
               const SizedBox(width: 10),
               ElevatedButton(
-                onPressed: () => _delayedDisplayKey.currentState?.resetAnimation(),
+                onPressed: () =>
+                    _delayedDisplayKey.currentState?.resetAnimation(),
                 child: const Text('Reset'),
               ),
             ],
@@ -141,9 +145,11 @@ class _ScreenState extends State<Screen> {
             animationDuration: const Duration(seconds: 2),
             customAnimationBuilder: (context, child, animationController) {
               return FadeTransition(
-                opacity: Tween<double>(begin: 0.0, end: 1.0).animate(animationController),
+                opacity: Tween<double>(begin: 0.0, end: 1.0)
+                    .animate(animationController),
                 child: ScaleTransition(
-                  scale: Tween<double>(begin: 0.5, end: 1.0).animate(animationController),
+                  scale: Tween<double>(begin: 0.5, end: 1.0)
+                      .animate(animationController),
                   child: child,
                 ),
               );
@@ -209,11 +215,6 @@ class _ScreenState extends State<Screen> {
     );
   }
 }
-
-
-
-
-
 
 // Import the animation package
 /*
@@ -434,8 +435,6 @@ class AnimatedButtonExample extends StatelessWidget {
     );
   }
 }*/
-
-
 
 /*
 class MyHomePage extends StatefulWidget {

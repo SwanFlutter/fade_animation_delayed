@@ -1,6 +1,6 @@
-# DelayedDisplay
+# FadeAnimationDelayed
 
-DelayedDisplay is a custom Flutter widget that allows you to display content with a delay and various animations. It's perfect for creating dynamic and engaging user interfaces.
+FadeAnimationDelayed is a custom Flutter widget that allows you to display content with a delay and various animations. It's perfect for creating dynamic and engaging user interfaces.
 
 ## Features
 
@@ -20,7 +20,7 @@ dependencies:
 ```
 
 - Usage
-To use DelayedDisplay, import it in your Dart code:
+To use FadeAnimationDelayed, import it in your Dart code:
 
 ```dart
 import 'package:fade_animation_delayed/fade_animation_delayed.dart';
