@@ -19,7 +19,7 @@ To use this package, add `fade_animation_delayed` as a dependency in your `pubsp
 
 ```yaml
 dependencies:
-  fade_animation_delayed: ^0.0.1
+  fade_animation_delayed: ^0.0.2
 ```
 
 - Usage
