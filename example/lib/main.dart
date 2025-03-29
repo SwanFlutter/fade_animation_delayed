@@ -26,7 +26,10 @@ class Screen extends StatefulWidget {
 class _ScreenState extends State<Screen> {
   final GlobalKey<FadeAnimationDelayedState> _delayedDisplayKey =
       GlobalKey<FadeAnimationDelayedState>();
-  bool _isVisible = true;
+  final GlobalKey<FadeAnimationDelayedState> _textAnimationKey =
+      GlobalKey<FadeAnimationDelayedState>();
+
+  bool _isVisible = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -175,12 +178,15 @@ class _ScreenState extends State<Screen> {
               setState(() {
                 _isVisible = !_isVisible;
               });
+              _textAnimationKey.currentState?.resetAnimation();
             },
             child: Text(_isVisible ? 'Hide' : 'Show'),
           ),
+
           const SizedBox(height: 20),
           Center(
             child: FadeAnimationDelayed(
+              key: _textAnimationKey,
               delay: const Duration(milliseconds: 500),
               animationDuration: const Duration(milliseconds: 500),
               fadeIn: _isVisible,

@@ -9,9 +9,13 @@ FadeAnimationDelayed is a custom Flutter widget that allows you to display conte
 - Repeatable animations
 - Controllable animations (pause, resume, and reset)
 - Support for custom animations
+- Animation group management
+- Global and instance state tracking
+- Auto-start and initial pause options
+- Animation completion callbacks
+- Custom animation composition
 
-- ![animatins](https://github.com/user-attachments/assets/871502c1-ec47-494c-9831-7f90e688761f)
-
+![animatins](https://github.com/user-attachments/assets/871502c1-ec47-494c-9831-7f90e688761f)
 
 ## Installation
 
@@ -19,30 +23,29 @@ To use this package, add `fade_animation_delayed` as a dependency in your `pubsp
 
 ```yaml
 dependencies:
-  fade_animation_delayed: ^0.0.2
+  fade_animation_delayed: ^0.0.3
 ```
 
-- Usage
+## Usage
+
 To use FadeAnimationDelayed, import it in your Dart code:
 
 ```dart
 import 'package:fade_animation_delayed/fade_animation_delayed.dart';
-
 ```
 
 Then you can use it in your widgets:
 
 ```dart
-
 FadeAnimationDelayed(
   delay: Duration(seconds: 1),
   child: Text('Hello, World!'),
 )
-
 ```
 
 ## Advanced Examples
-- Using Multiple Animations
+
+### Using Multiple Animations
 
 ```dart
 final GlobalKey<FadeAnimationDelayedState> delayedDisplayKey = GlobalKey<FadeAnimationDelayedState>();
@@ -50,29 +53,26 @@ final GlobalKey<FadeAnimationDelayedState> delayedDisplayKey = GlobalKey<FadeAni
 FadeAnimationDelayed(
   stateKey: delayedDisplayKey,
   delay: Duration(seconds: 1),
-  fadingDuration: Duration(milliseconds: 500),
-  slidingCurve: Curves.easeInOut,
-  slidingBeginOffset: Offset(0.0, 0.1),
+  animationDuration: Duration(milliseconds: 500),
+  easingType: EasingType.easeInOut,
   enableScaling: true,
   enableRotation: true,
   child: Text('Text with multiple animations'),
 )
 ```
 
-- Repeating Animation
+### Repeating Animation
 
 ```dart
-
-DelayedDisplay(
+FadeAnimationDelayed(
   delay: Duration(seconds: 1),
   repeat: true,
   repeatInterval: Duration(seconds: 3),
   child: Icon(Icons.favorite),
 )
-
 ```
 
-- Controlling Animation
+### Controlling Animation
 
 ```dart
 final GlobalKey<FadeAnimationDelayedState> delayedDisplayKey = GlobalKey<FadeAnimationDelayedState>();
@@ -92,7 +92,7 @@ ElevatedButton(
 ),
 ```
 
-- Custom Animation
+### Custom Animation
 
 ```dart
 FadeAnimationDelayed(
@@ -110,27 +110,54 @@ FadeAnimationDelayed(
 )
 ```
 
-- Use Extension
+### Using Extension Method
 
 ```dart
-
-
- Center(
-      child: const Text(
-          "Hello",
-            style: TextStyle(fontSize: 40),
-        ).animate(
-        delay: const Duration(seconds: 1),
-        fadeIn: true,
-         easingType: EasingType.bounceOut,
-       repeat: false,
-        repeatInterval: const Duration(seconds: 1),
-   ),
- )
-
+Center(
+  child: const Text(
+    "Hello",
+    style: TextStyle(fontSize: 40),
+  ).animate(
+    delay: const Duration(seconds: 1),
+    fadeIn: true,
+    easingType: EasingType.bounceOut,
+    repeat: false,
+    repeatInterval: const Duration(seconds: 1),
+  ),
+)
 ```
 
-## Example Complete
+### Animation Group Management
+
+```dart
+final animationManager = AnimationGroupManager();
+
+// Register animations
+final key1 = animationManager.registerAnimation('animation1');
+final key2 = animationManager.registerAnimation('animation2');
+
+// Control animations
+animationManager.pauseAnimation('animation1');
+animationManager.resumeAll();
+animationManager.resetAll();
+```
+
+### Animation Composition
+
+```dart
+AnimationComposer.composeAnimations(
+  child: Text('Composed Animation'),
+  animationTypes: [
+    AnimationType.slide,
+    AnimationType.fadeIn,
+    AnimationType.zoomIn
+  ],
+  slideDirection: SlideDirection.rightToLeft,
+  easingType: EasingType.elasticOut,
+)
+```
+
+## Complete Example
 
 ```dart
 void main() => runApp(const MyApp());
@@ -141,7 +168,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'DelayedDisplay Demo',
+      title: 'FadeAnimationDelayed Demo',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: const Screen(),
     );
@@ -158,11 +185,12 @@ class Screen extends StatefulWidget {
 class _ScreenState extends State<Screen> {
   final GlobalKey<FadeAnimationDelayedState> _delayedDisplayKey = GlobalKey<FadeAnimationDelayedState>();
   bool _isVisible = true;
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Screen'),
+        title: const Text('FadeAnimationDelayed Demo'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
@@ -203,7 +231,6 @@ class _ScreenState extends State<Screen> {
 
           // Example 2: Zoom In Animation
           FadeAnimationDelayed(
-            //  stateKey: _delayedDisplayKey,
             delay: const Duration(seconds: 1),
             animationDuration: const Duration(seconds: 2),
             animationType: AnimationType.zoomIn,
@@ -258,7 +285,7 @@ class _ScreenState extends State<Screen> {
           FadeAnimationDelayed(
             delay: const Duration(milliseconds: 500),
             animationDuration: const Duration(seconds: 1),
-            repeat: false,
+            repeat: true,
             repeatInterval: const Duration(seconds: 4),
             animationType: AnimationType.slide,
             slideDirection: SlideDirection.topToBottom,
@@ -283,6 +310,9 @@ class _ScreenState extends State<Screen> {
             child: _buildExampleCard('Custom Animation Builder'),
           ),
 
+          const SizedBox(height: 20),
+
+          // Example 8: Using Extension Method
           Center(
             child: const Text(
               "Hello",
@@ -295,7 +325,10 @@ class _ScreenState extends State<Screen> {
               repeatInterval: const Duration(seconds: 1),
             ),
           ),
+
           const SizedBox(height: 20),
+
+          // Example 9: Toggle Visibility
           ElevatedButton(
             onPressed: () {
               setState(() {
@@ -304,7 +337,9 @@ class _ScreenState extends State<Screen> {
             },
             child: Text(_isVisible ? 'Hide' : 'Show'),
           ),
+
           const SizedBox(height: 20),
+
           Center(
             child: FadeAnimationDelayed(
               delay: const Duration(milliseconds: 500),
@@ -341,8 +376,8 @@ class _ScreenState extends State<Screen> {
     );
   }
 }
-
 ```
 
-- Contributing
+## Contributing
+
 Your contributions to this project are highly appreciated. Please open an issue for any problems, suggestions, or improvements, or submit a pull request.

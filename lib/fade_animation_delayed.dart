@@ -1,4 +1,4 @@
-library fade_animation_delayed;
+library;
 
 import 'dart:async';
 import 'dart:math';
@@ -34,9 +34,6 @@ enum EasingType {
 
 /// Advanced Fade and Slide Animation Widget
 class FadeAnimationDelayed extends StatefulWidget {
-  /// The child widget to be animated
-  final Widget child;
-
   /// Delay before starting the animation
   final Duration delay;
 
@@ -87,7 +84,33 @@ class FadeAnimationDelayed extends StatefulWidget {
 
   /// Opacity range for fade animations
   final double minOpacity;
+
+  /// Opacity range for fade animations
   final double maxOpacity;
+
+  /// The child widget to be animated
+  final Widget child;
+
+  /// Callback when animation completes
+  final VoidCallback? onCompleted;
+
+  /// Whether to track animation state across instances
+  final bool useGlobalState;
+
+  /// Whether to run animation only once
+  final bool runOnce;
+
+  /// Whether to reset animation on rebuild
+  final bool resetOnRebuild;
+
+  /// Unique identifier for this animation instance
+  final String? instanceKey;
+
+  /// Whether to start animation immediately
+  final bool autoStart;
+
+  /// Whether animation should be paused initially
+  final bool initiallyPaused;
 
   const FadeAnimationDelayed({
     required this.child,
@@ -107,10 +130,18 @@ class FadeAnimationDelayed extends StatefulWidget {
     this.minScale = 0.5,
     this.maxScale = 1.0,
     this.minRotation = 0.0,
-    this.maxRotation = 2 / pi,
+    this.maxRotation = 2 * pi / 180,
     this.minOpacity = 0.0,
     this.maxOpacity = 1.0,
-  }) : super(key: stateKey);
+    this.onCompleted,
+    this.useGlobalState = false,
+    this.runOnce = false,
+    this.resetOnRebuild = false,
+    this.instanceKey,
+    this.autoStart = true,
+    this.initiallyPaused = false,
+    Key? key,
+  }) : super(key: stateKey ?? key);
 
   @override
   FadeAnimationDelayedState createState() => FadeAnimationDelayedState();
@@ -124,6 +155,11 @@ class FadeAnimationDelayedState extends State<FadeAnimationDelayed>
   late Animation<double> _rotationAnimation;
   late Animation<double> _opacityAnimation;
   Timer? _timer;
+  bool _isAnimationCompleted = false;
+
+  // Static tracking for global state
+  static bool _hasAnimatedOnce = false;
+  static final Map<String, bool> _instanceStates = {};
 
   @override
   void initState() {
@@ -134,6 +170,8 @@ class FadeAnimationDelayedState extends State<FadeAnimationDelayed>
       vsync: this,
       duration: widget.animationDuration,
     );
+
+    _animationController.addStatusListener(_handleAnimationStatus);
 
     // Apply selected easing curve
     final CurvedAnimation curvedAnimation = CurvedAnimation(
@@ -165,8 +203,27 @@ class FadeAnimationDelayedState extends State<FadeAnimationDelayed>
       end: widget.maxOpacity,
     ).animate(curvedAnimation);
 
-    // Run initial animation
-    _runAnimation();
+    // Check if we should run the animation (based on global/instance state)
+    if (_shouldRunAnimation()) {
+      if (widget.autoStart && !widget.initiallyPaused) {
+        _runAnimation();
+      } else if (widget.initiallyPaused) {
+        // Set to initial state but don't start
+        if (widget.fadeIn) {
+          _animationController.value = 0;
+        } else {
+          _animationController.value = 1;
+        }
+      }
+    } else {
+      // Animation should not run, set to completed state
+      if (widget.fadeIn) {
+        _animationController.value = 1;
+      } else {
+        _animationController.value = 0;
+      }
+      _isAnimationCompleted = true;
+    }
   }
 
   // Get appropriate easing curve based on EasingType
@@ -189,21 +246,22 @@ class FadeAnimationDelayedState extends State<FadeAnimationDelayed>
 
   // Determine slide start offset based on direction
   Offset _getSlideBeginOffset() {
-    // Start from the absolute edge of the screen
+    final double distance = widget.slideDistance * 8.0;
     switch (widget.slideDirection) {
       case SlideDirection.leftToRight:
-        return const Offset(-8.0, 0.0); // Far off-screen to the left
+        return Offset(-distance, 0.0); // Off-screen to the left
       case SlideDirection.rightToLeft:
-        return const Offset(8.0, 0.0); // Far off-screen to the right
+        return Offset(distance, 0.0); // Off-screen to the right
       case SlideDirection.topToBottom:
-        return const Offset(0.0, -8.0); // Far off-screen from the top
+        return Offset(0.0, -distance); // Off-screen from the top
       case SlideDirection.bottomToTop:
-        return const Offset(0.0, 8.0); // Far off-screen from the bottom
+        return Offset(0.0, distance); // Off-screen from the bottom
     }
   }
 
   @override
   void dispose() {
+    _animationController.removeStatusListener(_handleAnimationStatus);
     _animationController.dispose();
     _timer?.cancel();
     super.dispose();
@@ -212,21 +270,74 @@ class FadeAnimationDelayedState extends State<FadeAnimationDelayed>
   @override
   void didUpdateWidget(FadeAnimationDelayed oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.fadeIn != widget.fadeIn) {
+
+    // Check if any animation properties changed
+    bool shouldRebuild = oldWidget.fadeIn != widget.fadeIn ||
+        oldWidget.animationType != widget.animationType ||
+        oldWidget.slideDirection != widget.slideDirection ||
+        oldWidget.animationDuration != widget.animationDuration ||
+        oldWidget.easingType != widget.easingType;
+
+    // If the key changed, we should rebuild
+    if (oldWidget.instanceKey != widget.instanceKey) {
+      shouldRebuild = true;
+    }
+
+    if (shouldRebuild && widget.resetOnRebuild) {
+      _resetAnimations();
       _runAnimation();
     }
   }
 
+  // Reset all animations to initial state
+  void _resetAnimations() {
+    // Recreate animation with current properties
+    final CurvedAnimation curvedAnimation = CurvedAnimation(
+      curve: _getEasingCurve(),
+      parent: _animationController,
+    );
+
+    _slideAnimationOffset = Tween<Offset>(
+      begin: _getSlideBeginOffset(),
+      end: Offset.zero,
+    ).animate(curvedAnimation);
+
+    _scaleAnimation = Tween<double>(
+      begin: widget.minScale,
+      end: widget.maxScale,
+    ).animate(curvedAnimation);
+
+    _rotationAnimation = Tween<double>(
+      begin: widget.minRotation,
+      end: widget.maxRotation,
+    ).animate(curvedAnimation);
+
+    _opacityAnimation = Tween<double>(
+      begin: widget.minOpacity,
+      end: widget.maxOpacity,
+    ).animate(curvedAnimation);
+
+    // Reset controller
+    _animationController.reset();
+    _isAnimationCompleted = false;
+  }
+
   // Run the animation with optional delay and repetition
   void _runAnimation() {
+    if (_timer != null) {
+      _timer!.cancel();
+    }
+
     _timer = Timer(widget.delay, () {
-      if (widget.repeat) {
-        _animationController.repeat(
-            reverse: true, period: widget.repeatInterval);
-      } else {
-        widget.fadeIn
-            ? _animationController.forward()
-            : _animationController.reverse();
+      if (mounted) {
+        if (widget.repeat) {
+          _animationController.repeat(
+              reverse: true, period: widget.repeatInterval);
+        } else {
+          widget.fadeIn
+              ? _animationController.forward()
+              : _animationController.reverse();
+        }
       }
     });
   }
@@ -238,13 +349,70 @@ class FadeAnimationDelayedState extends State<FadeAnimationDelayed>
 
   // Resume the animation from current position
   void resumeAnimation() {
-    _animationController.forward();
+    if (_isAnimationCompleted) {
+      _isAnimationCompleted = false;
+      _animationController.reset();
+    }
+    if (widget.fadeIn) {
+      _animationController.forward();
+    } else {
+      _animationController.reverse();
+    }
   }
 
   // Reset and restart the animation
   void resetAnimation() {
+    _isAnimationCompleted = false;
     _animationController.reset();
     _runAnimation();
+  }
+
+  // Force animation to complete immediately
+  void completeAnimation() {
+    if (widget.fadeIn) {
+      _animationController.animateTo(1.0, duration: Duration.zero);
+    } else {
+      _animationController.animateTo(0.0, duration: Duration.zero);
+    }
+    _isAnimationCompleted = true;
+  }
+
+  void _handleAnimationStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed ||
+        status == AnimationStatus.dismissed) {
+      _isAnimationCompleted = true;
+
+      // Update global or instance state
+      if (widget.runOnce) {
+        if (widget.useGlobalState) {
+          _hasAnimatedOnce = true;
+        } else {
+          final key = widget.instanceKey ?? widget.stateKey?.toString() ?? '';
+          if (key.isNotEmpty) {
+            _instanceStates[key] = true;
+          }
+        }
+      }
+
+      widget.onCompleted?.call();
+    }
+  }
+
+  bool _shouldRunAnimation() {
+    // Always run if resetOnRebuild is true
+    if (widget.resetOnRebuild) return true;
+
+    // Check if animation should run only once
+    if (widget.runOnce) {
+      if (widget.useGlobalState) {
+        return !_hasAnimatedOnce;
+      } else {
+        final key = widget.instanceKey ?? widget.stateKey?.toString() ?? '';
+        return key.isEmpty || _instanceStates[key] != true;
+      }
+    }
+
+    return true;
   }
 
   @override
@@ -283,26 +451,33 @@ class FadeAnimationDelayedState extends State<FadeAnimationDelayed>
       case AnimationType.zoomIn:
         child = ScaleTransition(
           scale: _scaleAnimation,
-          child: child,
+          child: FadeTransition(
+            opacity: _opacityAnimation,
+            child: child,
+          ),
         );
         break;
       case AnimationType.rotation:
         child = RotationTransition(
           turns: _rotationAnimation,
-          child: child,
+          child: FadeTransition(
+            opacity: _opacityAnimation,
+            child: child,
+          ),
         );
         break;
     }
 
     // Optional additional transformations
-    if (widget.enableScaling) {
+    if (widget.enableScaling && widget.animationType != AnimationType.zoomIn) {
       child = ScaleTransition(
         scale: _scaleAnimation,
         child: child,
       );
     }
 
-    if (widget.enableRotation) {
+    if (widget.enableRotation &&
+        widget.animationType != AnimationType.rotation) {
       child = RotationTransition(
         turns: _rotationAnimation,
         child: child,
@@ -329,6 +504,14 @@ extension EnhancedAnimationExtension on Widget {
     SlideDirection slideDirection = SlideDirection.bottomToTop,
     double slideDistance = 0.35,
     AnimationType animationType = AnimationType.slide,
+    VoidCallback? onCompleted,
+    bool useGlobalState = false,
+    bool runOnce = false,
+    bool resetOnRebuild = false,
+    String? instanceKey,
+    bool autoStart = true,
+    bool initiallyPaused = false,
+    Key? key,
   }) {
     return FadeAnimationDelayed(
       stateKey: stateKey,
@@ -343,6 +526,14 @@ extension EnhancedAnimationExtension on Widget {
       slideDirection: slideDirection,
       slideDistance: slideDistance,
       animationType: animationType,
+      onCompleted: onCompleted,
+      useGlobalState: useGlobalState,
+      runOnce: runOnce,
+      resetOnRebuild: resetOnRebuild,
+      instanceKey: instanceKey,
+      autoStart: autoStart,
+      initiallyPaused: initiallyPaused,
+      key: key,
       child: this,
     );
   }
@@ -361,20 +552,88 @@ class AnimationComposer {
     ],
     EasingType easingType = EasingType.easeOut,
     SlideDirection slideDirection = SlideDirection.bottomToTop,
+    String? instanceKey,
+    bool useGlobalState = false,
+    bool runOnce = false,
+    Key? key,
   }) {
     Widget animatedChild = child;
 
-    for (var animationType in animationTypes) {
+    for (var animationType in animationTypes.reversed) {
       animatedChild = FadeAnimationDelayed(
         delay: delay,
         animationDuration: animationDuration,
         easingType: easingType,
         animationType: animationType,
         slideDirection: slideDirection,
+        instanceKey: instanceKey,
+        useGlobalState: useGlobalState,
+        runOnce: runOnce,
+        key: key,
         child: animatedChild,
       );
     }
 
     return animatedChild;
+  }
+}
+
+/// A manager class to handle multiple animations simultaneously
+class AnimationGroupManager {
+  final Map<String, GlobalKey<FadeAnimationDelayedState>> _animationKeys = {};
+
+  /// Register a new animation with a unique identifier
+  GlobalKey<FadeAnimationDelayedState> registerAnimation(String id) {
+    final key = GlobalKey<FadeAnimationDelayedState>();
+    _animationKeys[id] = key;
+    return key;
+  }
+
+  /// Get an existing animation key
+  GlobalKey<FadeAnimationDelayedState>? getAnimationKey(String id) {
+    return _animationKeys[id];
+  }
+
+  /// Pause a specific animation
+  void pauseAnimation(String id) {
+    _animationKeys[id]?.currentState?.pauseAnimation();
+  }
+
+  /// Resume a specific animation
+  void resumeAnimation(String id) {
+    _animationKeys[id]?.currentState?.resumeAnimation();
+  }
+
+  /// Reset a specific animation
+  void resetAnimation(String id) {
+    _animationKeys[id]?.currentState?.resetAnimation();
+  }
+
+  /// Pause all registered animations
+  void pauseAll() {
+    for (var key in _animationKeys.values) {
+      key.currentState?.pauseAnimation();
+    }
+  }
+
+  /// Resume all registered animations
+  void resumeAll() {
+    for (var key in _animationKeys.values) {
+      key.currentState?.resumeAnimation();
+    }
+  }
+
+  /// Reset all registered animations
+  void resetAll() {
+    for (var key in _animationKeys.values) {
+      key.currentState?.resetAnimation();
+    }
+  }
+
+  /// Complete all animations immediately
+  void completeAll() {
+    for (var key in _animationKeys.values) {
+      key.currentState?.completeAnimation();
+    }
   }
 }

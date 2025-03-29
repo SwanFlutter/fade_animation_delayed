@@ -1,6 +1,6 @@
 name: fade_animation_delayed
 description: "FadeAnimationDelayed is a custom Flutter widget that allows you to display content with a delay and various animations."
-version: 0.0.2
+version: 0.0.3
 homepage: "https://github.com/SwanFlutter/fade_animation_delayed"
 repository: "https://github.com/SwanFlutter/fade_animation_delayed"
 
